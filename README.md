@@ -51,35 +51,25 @@ $x_{ij}$ = quantidade de itens enviados do estado vendedor $i$ (origem) para o e
 ### Função objetivo
 
 Minimizar o custo total de frete (em reais):
-
 ```math
-\min Z = \sum_{i} \sum_{j} c_{ij} x_{ij}
+\Large \boxed{\min Z = \sum_{i} \sum_{j} c_{ij} x_{ij}}
 ```
-
 ### Restrições
 
 Oferta de cada origem:
-
 ```math
-\sum_{j} x_{ij} = o_i \quad \forall i
+\Large \sum_{j} x_{ij} = o_i \quad \forall i
 ```
-
 Demanda de cada destino:
-
 ```math
-\sum_{i} x_{ij} = d_j \quad \forall j
+\Large \sum_{i} x_{ij} = d_j \quad \forall j
 ```
-
 Não-negatividade:
-
 ```math
-x_{ij} \ge 0 \quad \forall i, j
+\Large x_{ij} \ge 0 \quad \forall i, j
 ```
-
 ### Condição de equilíbrio
-
 ```math
-\sum_{i} o_i = \sum_{j} d_j
+\Large \sum_{i} o_i = \sum_{j} d_j
 ```
-
 Se não fechar, adiciona-se uma origem ou um destino fictício com custo $c = 0$.
