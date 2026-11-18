@@ -1,4 +1,4 @@
-# Pesquisa Operacional I
+# Pesquisa Operacional
 
 ## Integrantes
 
@@ -93,7 +93,7 @@ O envio pode passar por um CD $h$ quando isso sai mais barato que o envio direto
 \Large c'_{ij} = \min \left( c_{ij}, \; \min_{h} \left[ \alpha \, c_{ih} + c_{hj} \right] \right)
 ```
 
-onde $\alpha$ é o desconto de consolidação no trecho até o CD. A função objetivo usa $c'_{ij}$ no lugar de $c_{ij}$.
+onde $`\alpha`$ é o desconto de consolidação no trecho até o CD. A função objetivo usa $`c'_{ij}`$ no lugar de $`c_{ij}`$.
 
 **Premissas:** $\alpha$ (desconto de consolidação) e os CDs candidatos serão definidos na implementação. Testaremos mais de um valor de $\alpha$ para medir o quanto a economia depende dele.
 
