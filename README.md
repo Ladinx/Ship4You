@@ -27,8 +27,6 @@ Os dados vêm do [Brazilian E-Commerce Public Dataset by Olist](https://www.kagg
 
 Após o tratamento, a base tem **110.197 itens entregues**, com **22 estados vendedores** e **27 estados compradores**. O frete médio é de **19,95 reais por item**, o que representa **16,63%** do valor dos produtos. O frete pesa bastante no preço final, então reduzi-lo tem impacto direto no custo do e-commerce.
 
-> **Nota sobre os dados:** o dataset já está tratado e o script de tratamento está neste repositório. Os dados em si não podem ser disponibilizados no GitHub devido às licenças de uso impostas pela Olist.
-
 ## C) Por que o Método de Vogel é o mais adequado
 
 O nosso problema é, por natureza, um **problema de transporte**: estados que vendem uma quantidade limitada de itens, estados que compram e um custo de frete diferente para cada rota, com o objetivo de decidir quanto enviar de cada origem para cada destino gastando o mínimo.
