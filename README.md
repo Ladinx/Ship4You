@@ -171,15 +171,14 @@ Depois do menu, o `main.py` pergunta o cenário antes de rodar a otimização:
 
 No fim ele mostra um resumo do que vai rodar e pergunta "Rodar agora?".
 
-Para gerar o resultado padrão sem ninguém no teclado (ex.: durante o vídeo), use:
+A execução também pode ser feita sem as perguntas, usando os padrões:
 
 ```bash
 python3 main.py --sem-perguntas
 ```
 
-Se quiser ver a matriz pequena de exemplo (menu, opção 2), ela usa dados
-conhecidos e salva em `graficos_exemplo/` — serve para confirmar que a instalação
-está funcionando sem precisar dos CSVs tratados.
+A opção 2 do menu roda uma matriz pequena com dados conhecidos e salva em
+`graficos_exemplo/`; serve para verificar a instalação sem os CSVs tratados.
 
 ### 4. Estratégia dos filtros
 
@@ -283,12 +282,12 @@ Ship4You/
 └── README.md                # este arquivo
 ```
 
-## I) Onde cada critério da entrega final aparece
+## I) Onde cada item da rubrica está no projeto
 
-| Critério da rubrica (Checkpoint 2) | Onde mostrar |
+| Critério | Onde está |
 |---|---|
-| 2.1 Funcionamento e forma de cálculo | `vogel.py` mostra penalidade → maior penalidade → alocação máxima; `main.py` explica em palavras a regra dos CDs. Use o menu opção 2 para o cálculo manual pequeno. |
-| 2.2 Implementação em Python | `python3 main.py` carrega a base, roda o pipeline, valida as restrições e imprime o tempo de cada etapa. |
-| 2.3 Exibição visual | `resultados/graficos/`: mapa de calor, barras Custo Real x Vogel e rotas sobrecarregadas. |
-| 2.5 Contexto e análise crítica | `resultados/relatorio.md` (seção 6) e a análise de sensibilidade acima: economia em reais e %, o que fazer e o risco de concentração. |
+| 2.1 Funcionamento e forma de cálculo | `vogel.py`: penalidades de linha e coluna, escolha da maior penalidade e alocação máxima na célula de menor custo. A regra dos CDs aparece descrita em palavras na saída do `main.py` e na seção D. |
+| 2.2 Implementação em Python | `main.py`: carrega a base, executa o pipeline, valida as restrições do modelo e mede o tempo de cada etapa. |
+| 2.3 Exibição visual | `resultados/graficos/`: mapa de calor das rotas, barras Custo Real x Vogel, rotas mais carregadas e curva de sensibilidade. |
+| 2.5 Contexto e análise crítica | `resultados/relatorio.md` (seção 6) e seção G deste README: economia em reais e em %, decisão prática e concentração de volume. |
 
