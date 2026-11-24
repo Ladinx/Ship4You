@@ -1,3 +1,15 @@
+# Python
 __pycache__/
 *.pyc
 venv/
+.venv/
+
+# editor / sistema
+.vscode/
+.DS_Store
+
+# saídas de teste (as da entrega ficam versionadas em saidas/)
+saidas/exemplo/
+
+# backups
+*.zip

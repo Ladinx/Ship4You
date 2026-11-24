@@ -44,6 +44,7 @@ from analise_resultados import (
     analisar_resultados,
     montar_resumo,
 )
+import caminhos
 from matriz_transporte import carregar_dados_base, gerar_matriz_transporte
 from vogel import resolver_vogel
 
@@ -138,8 +139,8 @@ def preencher_padroes(args) -> None:
     args.data_inicio = None
     args.data_fim = None
     args.categoria = None
-    args.dados = "dataset-tratado"
-    args.saida = "resultados"
+    args.dados = "dados"
+    args.saida = "saidas"
     args.sem_graficos = False
     args.mostrar = False
     args.sensibilidade = None
@@ -697,12 +698,19 @@ def executar_pipeline(args) -> int:
     return 0
 
 
+def _resolver_caminhos(args) -> None:
+    """Aceita caminhos relativos à raiz do projeto (dados/, saidas/)."""
+    args.dados = caminhos.resolver(args.dados)
+    args.saida = caminhos.resolver(args.saida)
+
+
 def main(argv=None) -> int:
     """Ponto de entrada: menu, perguntas e execução."""
     args = criar_parser().parse_args(argv)
     preencher_padroes(args)
 
     if args.sem_perguntas:
+        _resolver_caminhos(args)
         return executar_pipeline(args)
 
     escolha = menu_inicial()
@@ -711,13 +719,14 @@ def main(argv=None) -> int:
 
         titulo("EXEMPLO — matriz pequena (não precisa dos CSVs)")
         executar_exemplo()
-        print("\n-> Exemplo executado em graficos_exemplo/. Serve para testar a instalação.")
+        print("\n-> Exemplo executado em saidas/exemplo/. Serve para testar a instalação.")
         return 0
     if escolha == "3":
         listar_categorias(args)
         return 0
 
     args = modo_interativo(args)
+    _resolver_caminhos(args)
     return executar_pipeline(args)
 
 

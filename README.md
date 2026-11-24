@@ -117,13 +117,15 @@ source .venv/bin/activate        # Windows: .venv\Scripts\activate
 pip install -r requirements.txt  # pandas, numpy, matplotlib
 ```
 
-Os CSVs tratados já estão em `dataset-tratado/`, então não é preciso rodar a
-limpeza (`limpeza_olist.py`) de novo.
+Os CSVs tratados já estão em `dados/`, então não é preciso rodar a limpeza
+(`src/limpeza_olist.py`) de novo. Os CSVs originais do Kaggle (~120 MB) não ficam
+no repositório; se precisar refazer o tratamento, rode
+`python3 src/limpeza_olist.py --brutos /caminho/dos/csvs-brutos`.
 
 ### 2. Rodar o projeto inteiro com um comando
 
 ```bash
-python3 main.py
+python3 src/main.py
 ```
 
 O programa é **interativo**: abre um menu e depois faz as perguntas do cenário.
@@ -137,15 +139,15 @@ O que você quer fazer?
   [3] Ver as categorias de produto e o período da base
 ```
 
-Depois o `main.py` executa as três partes na ordem certa:
+Depois o `src/main.py` executa as três partes na ordem certa:
 
 | Ordem | Arquivo | Responsável | O que faz |
 |---|---|---|---|
-| 1 | `matriz_transporte.py` | Matheus | monta `custos`, `oferta` e `demanda` a partir do dataset |
-| 2 | `vogel.py` | Rebecca | resolve o transporte pelo Vogel e devolve `alocacao` e `custo_total` |
-| 3 | `analise_resultados.py` | Bender | compara com o frete real e gera os gráficos |
+| 1 | `src/matriz_transporte.py` | Matheus | monta `custos`, `oferta` e `demanda` a partir do dataset |
+| 2 | `src/vogel.py` | Rebecca | resolve o transporte pelo Vogel e devolve `alocacao` e `custo_total` |
+| 3 | `src/analise_resultados.py` | Bender | compara com o frete real e gera os gráficos |
 
-Arquivos gerados em `resultados/`:
+Arquivos gerados em `saidas/`:
 
 | Arquivo | Conteúdo |
 |---|---|
@@ -174,11 +176,11 @@ No fim ele mostra um resumo do que vai rodar e pergunta "Rodar agora?".
 A execução também pode ser feita sem as perguntas, usando os padrões:
 
 ```bash
-python3 main.py --sem-perguntas
+python3 src/main.py --sem-perguntas
 ```
 
 A opção 2 do menu roda uma matriz pequena com dados conhecidos e salva em
-`graficos_exemplo/`; serve para verificar a instalação sem os CSVs tratados.
+`saidas/exemplo/`; serve para verificar a instalação sem os CSVs tratados.
 
 ### 4. Estratégia dos filtros
 
@@ -213,7 +215,7 @@ foram estimadas em cada execução.
 
 ## G) Resultados obtidos
 
-Execução padrão (`python3 main.py`, base completa, `alpha = 0,7`,
+Execução padrão (`python3 src/main.py`, base completa, `alpha = 0,7`,
 CDs: SP, MG, PR, PE, GO):
 
 | Indicador | Valor |
@@ -270,15 +272,19 @@ restrições do modelo foram respeitadas").
 
 ```
 Ship4You/
-├── main.py                  # integração, filtros, execução e relatório (Arthur)
-├── matriz_transporte.py     # oferta, demanda, matriz de custo e regra dos CDs (Matheus)
-├── vogel.py                 # Método de Vogel (Rebecca)
-├── analise_resultados.py    # comparação com o frete real e gráficos (Bender)
-├── custo_rotas.py           # primeira versão da matriz de custo (apoio)
-├── limpeza_olist.py         # limpeza dos CSVs originais do Olist
+├── src/                     # código do pipeline
+│   ├── main.py              # integração, filtros, execução e relatório (Arthur)
+│   ├── matriz_transporte.py # oferta, demanda, matriz de custo e regra dos CDs (Matheus)
+│   ├── vogel.py             # Método de Vogel (Rebecca)
+│   ├── analise_resultados.py# comparação com o frete real e gráficos (Bender)
+│   ├── limpeza_olist.py     # limpeza dos CSVs originais do Olist
+│   └── caminhos.py          # resolve dados/ e saidas/ de qualquer diretório
+├── dados/                   # CSVs tratados usados na execução
+├── saidas/                  # o que o main.py gera (figuras, CSV e relatório)
+├── dashboard/               # dashboard visual (abre no navegador, sem servidor)
+├── docs/                    # briefing da equipe e material de apoio
 ├── requirements.txt         # dependências do projeto
-├── dataset-tratado/         # CSVs limpos usados na execução
-├── resultados/              # saída do main.py (figuras, CSV, JSON e relatório)
+├── LICENSE
 └── README.md                # este arquivo
 ```
 
@@ -286,8 +292,8 @@ Ship4You/
 
 | Critério | Onde está |
 |---|---|
-| 2.1 Funcionamento e forma de cálculo | `vogel.py`: penalidades de linha e coluna, escolha da maior penalidade e alocação máxima na célula de menor custo. A regra dos CDs aparece descrita em palavras na saída do `main.py` e na seção D. |
-| 2.2 Implementação em Python | `main.py`: carrega a base, executa o pipeline, valida as restrições do modelo e mede o tempo de cada etapa. |
-| 2.3 Exibição visual | `resultados/graficos/`: mapa de calor das rotas, barras Custo Real x Vogel, rotas mais carregadas e curva de sensibilidade. |
-| 2.5 Contexto e análise crítica | `resultados/relatorio.md` (seção 6) e seção G deste README: economia em reais e em %, decisão prática e concentração de volume. |
+| 2.1 Funcionamento e forma de cálculo | `src/vogel.py`: penalidades de linha e coluna, escolha da maior penalidade e alocação máxima na célula de menor custo. A regra dos CDs aparece descrita em palavras na saída do `main.py` e na seção D. |
+| 2.2 Implementação em Python | `src/main.py`: carrega a base, executa o pipeline, valida as restrições do modelo e mede o tempo de cada etapa. |
+| 2.3 Exibição visual | `saidas/graficos/`: mapa de calor das rotas, barras Custo Real x Vogel, rotas mais carregadas e curva de sensibilidade. Versão interativa em `dashboard/index.html`. |
+| 2.5 Contexto e análise crítica | `saidas/relatorio.md` (seção 6) e seção G deste README: economia em reais e em %, decisão prática e concentração de volume. |
 

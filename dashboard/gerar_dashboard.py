@@ -11,8 +11,7 @@ O que este script faz (uma vez, em Python):
 
 O dashboad no navegador só desenha: nenhum número é recalculado em JS.
 
-Uso:
-    cd Ship4You
+Uso (de qualquer pasta):
     python3 dashboard/gerar_dashboard.py
     # depois abrir dashboard/index.html no navegador
 """
@@ -28,8 +27,9 @@ import numpy as np
 import pandas as pd
 
 RAIZ = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-if RAIZ not in sys.path:
-    sys.path.insert(0, RAIZ)
+SRC = os.path.join(RAIZ, "src")
+if SRC not in sys.path:
+    sys.path.insert(0, SRC)
 
 from analise_resultados import PENALIDADE          # noqa: E402
 from main import ALPHAS_PADRAO, CDS_PADRAO, validar_solucao  # noqa: E402
@@ -37,7 +37,7 @@ from matriz_transporte import carregar_dados_base, gerar_matriz_transporte  # no
 from vogel import resolver_vogel                    # noqa: E402
 
 AQUI = os.path.dirname(os.path.abspath(__file__))
-PASTA_DADOS = os.path.join(RAIZ, "dataset-tratado")
+PASTA_DADOS = os.path.join(RAIZ, "dados")
 
 NOMES_UF = {
     "AC": "Acre", "AL": "Alagoas", "AM": "Amazonas", "AP": "Amapá", "BA": "Bahia",

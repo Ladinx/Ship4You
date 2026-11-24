@@ -1,14 +1,39 @@
 """
 Limpeza e tratamento do dataset Olist Brazilian E-commerce (Kaggle).
-Lê os CSVs brutos em data/ e grava versões tratadas em data/clean/,
-além de uma tabela analítica consolidada (data/clean/olist_analitico.csv).
-"""
-import pandas as pd
-import numpy as np
 
-RAW = "data"
-OUT = "data/clean"
+Lê os CSVs brutos e grava as versões tratadas em dados/, incluindo a tabela
+analítica consolidada (dados/olist_analitico.csv).
+
+Os CSVs brutos não ficam no repositório (são ~120 MB). Por padrão o script
+procura na pasta irmã do projeto (../data); use --brutos para apontar outra.
+
+    python3 src/limpeza_olist.py
+    python3 src/limpeza_olist.py --brutos ~/Downloads/olist --saida /tmp/tratado
+"""
+import argparse
 import os
+
+import numpy as np
+import pandas as pd
+
+import caminhos
+
+_parser = argparse.ArgumentParser(description="Limpeza do dataset Olist")
+_parser.add_argument("--brutos", default=str(caminhos.RAIZ.parent / "data"),
+                     help="pasta com os CSVs originais do Kaggle")
+_parser.add_argument("--saida", default=str(caminhos.DADOS),
+                     help="pasta onde gravar os CSVs tratados (padrão: dados/)")
+_args = _parser.parse_args()
+
+RAW = _args.brutos
+OUT = _args.saida
+
+if not os.path.isdir(RAW):
+    raise SystemExit(
+        f"Pasta de CSVs brutos não encontrada: {RAW}\n"
+        "Baixe o dataset no Kaggle (Brazilian E-Commerce Public Dataset by Olist) "
+        "ou passe outro caminho com --brutos."
+    )
 os.makedirs(OUT, exist_ok=True)
 
 def read(name):

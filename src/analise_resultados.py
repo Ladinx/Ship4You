@@ -1,6 +1,7 @@
 import os
 import sys
 
+import caminhos
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.colors import LogNorm
@@ -13,7 +14,7 @@ PENALIDADE = 99999.0
 # ---------------------------------------------------------------------------
 # 1) Custo real da Olist
 # ---------------------------------------------------------------------------
-def calcular_custo_real(pasta_dados="dataset-tratado"):
+def calcular_custo_real(pasta_dados=None):
     """
     Soma 'freight_value' do order_items_clean.csv, so dos pedidos entregues
     (mesma base e mesmo filtro que o matriz_transporte.py usa), para a
@@ -158,7 +159,7 @@ def grafico_rotas_sobrecarregadas(alocacao, origens, destinos, pasta, top_n=10, 
 # ---------------------------------------------------------------------------
 def analisar_resultados(custos, alocacao, custo_total,
                         origens=None, destinos=None,
-                        custo_real=None, pasta_saida="graficos",
+                        custo_real=None, pasta_saida=None,
                         mostrar=False, imprimir=True):
     """
     Gera os graficos e o resumo dos numeros.
@@ -190,6 +191,7 @@ def analisar_resultados(custos, alocacao, custo_total,
     if custo_real is None:
         custo_real = calcular_custo_real()
 
+    pasta_saida = pasta_saida or os.path.join(caminhos.SAIDAS, "graficos")
     os.makedirs(pasta_saida, exist_ok=True)
 
     resumo = montar_resumo(custo_real, custo_total, custos, alocacao)
@@ -241,7 +243,8 @@ def executar_exemplo():
     custo_total = float((custos * alocacao).sum())
     return analisar_resultados(custos, alocacao, custo_total,
                                origens=origens, destinos=destinos,
-                               custo_real=3100.0, pasta_saida="graficos_exemplo")
+                               custo_real=3100.0,
+                               pasta_saida=os.path.join(caminhos.SAIDAS, "exemplo"))
 
 
 if __name__ == "__main__":

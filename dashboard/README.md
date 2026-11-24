@@ -17,8 +17,7 @@ Duplo clique em `index.html` (funciona em `file://`, sem servidor e sem internet
 ## Como regenerar os dados
 
 ```bash
-cd Ship4You
-python3 dashboard/gerar_dashboard.py     # ~17 s, escreve dashboard/dados.js
+python3 dashboard/gerar_dashboard.py     # ~13 s, escreve dashboard/dados.js
 ```
 
 O script roda o **mesmo** cenário do `main.py` (base completa, `alpha = 0,70`,
@@ -47,7 +46,7 @@ Referência de conferência (deve ser idêntico a `resultados/relatorio.md`):
 
 ## Mapa sem biblioteca de mapas
 
-O mapa é desenhado direto dos CEPs (`dataset-tratado/geolocation_clean.csv` e as
+O mapa é desenhado direto dos CEPs (`dados/geolocation_clean.csv` e as
 coordenadas dos pedidos em `olist_analitico.csv`), sem Leaflet, tiles ou malha do IBGE:
 
 - **projeção** cônica de Albers calculada em Python (`Albers` em `gerar_dashboard.py`);
