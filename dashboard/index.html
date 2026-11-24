@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ship4You — Resultados (Vogel / Transporte)</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="brand">
+      <div class="logo">S4Y</div>
+      <div>
+        <h1>Ship4You <span>· Pesquisa Operacional I</span></h1>
+        <div class="sub">Problema de transporte (Vogel / VAM) sobre o e-commerce brasileiro — Olist</div>
+      </div>
+    </div>
+    <div class="head-right">
+      <div class="chip">Cenário <b>base completa</b></div>
+      <div class="chip">α <b id="chip-alpha">0,70</b></div>
+      <div class="chip cd" id="chip-cds">CDs · SP MG PR PE GO</div>
+      <button class="ghost" id="btn-apresentacao">Modo apresentação</button>
+      <button class="ghost" id="btn-export">Exportar PNG</button>
+    </div>
+  </header>
+
+  <section class="kpis">
+    <div class="kpi">
+      <div class="rotulo">Itens entregues</div>
+      <div class="valor" id="kpi-itens">—</div>
+      <div class="nota" id="kpi-periodo">—</div>
+    </div>
+    <div class="kpi red">
+      <div class="rotulo">Frete real pago</div>
+      <div class="valor" id="kpi-real">—</div>
+      <div class="nota" id="kpi-real-nota">—</div>
+    </div>
+    <div class="kpi green">
+      <div class="rotulo">Custo do Vogel</div>
+      <div class="valor" id="kpi-vogel">—</div>
+      <div class="nota" id="kpi-vogel-nota">—</div>
+    </div>
+    <div class="kpi green">
+      <div class="rotulo">Economia</div>
+      <div class="valor" id="kpi-economia">—</div>
+      <div class="nota" id="kpi-economia-nota">—</div>
+    </div>
+    <div class="kpi amber">
+      <div class="rotulo">Rotas ativas</div>
+      <div class="valor" id="kpi-rotas">—</div>
+      <div class="nota" id="kpi-rotas-nota">—</div>
+    </div>
+  </section>
+
+  <nav class="abas">
+    <button class="ativo" data-painel="visao"><span class="num">1</span>Visão geral</button>
+    <button data-painel="rotas"><span class="num">2</span>Rotas</button>
+    <button data-painel="mapa"><span class="num">3</span>Mapa do Brasil</button>
+    <button data-painel="sensibilidade"><span class="num">4</span>Sensibilidade</button>
+    <button data-painel="validacao"><span class="num">5</span>Validação</button>
+  </nav>
+
+  <!-- 1. VISÃO GERAL ------------------------------------------------------ -->
+  <section class="painel ativo" id="painel-visao">
+    <div class="grid c2">
+      <div class="card">
+        <button class="acao" data-export="ch-cascata">PNG</button>
+        <h2>Do frete real ao custo otimizado</h2>
+        <div class="desc">A cascata mostra onde os R$ <span class="dim">318 mil</span> de economia aparecem</div>
+        <div class="chart alto" id="ch-cascata"></div>
+      </div>
+      <div class="card">
+        <button class="acao" data-export="ch-rosca">PNG</button>
+        <h2>Composição do custo</h2>
+        <div class="desc">Quanto do frete real o Vogel mantém e quanto reduz</div>
+        <div class="chart alto" id="ch-rosca"></div>
+      </div>
+    </div>
+    <div class="grid c2" style="margin-top:14px">
+      <div class="card">
+        <button class="acao" data-export="ch-uf">PNG</button>
+        <h2>Economia por estado vendedor</h2>
+        <div class="desc">Diferença entre o frete realmente pago e o custo da alocação do Vogel</div>
+        <div class="chart alto" id="ch-uf"></div>
+      </div>
+      <div class="card">
+        <button class="acao" data-export="ch-mes">PNG</button>
+        <h2>Volume e frete ao longo do tempo</h2>
+        <div class="desc">Itens entregues por mês e frete médio por item no período da base</div>
+        <div class="chart alto" id="ch-mes"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 2. ROTAS ------------------------------------------------------------ -->
+  <section class="painel" id="painel-rotas">
+    <div class="grid mapa">
+      <div class="card">
+        <button class="acao" data-export="ch-matriz">PNG</button>
+        <h2>Matriz origem × destino</h2>
+        <div class="desc">Itens alocados pelo Vogel em cada rota (escala logarítmica) — passe o mouse para os detalhes</div>
+        <div class="chart grande" id="ch-matriz"></div>
+      </div>
+      <div style="display:grid; gap:14px; align-content:start">
+        <div class="card">
+          <button class="acao" data-export="ch-disp">PNG</button>
+          <h2>Volume × custo unitário</h2>
+          <div class="desc">Cada bolha é uma rota; tamanho = custo total, cor = economia por item</div>
+          <div class="chart alto" id="ch-disp"></div>
+        </div>
+        <div class="card">
+          <h2>Rotas mais carregadas</h2>
+          <div class="desc">Ordenável — clique no cabeçalho</div>
+          <table id="tabela-rotas">
+            <thead>
+              <tr>
+                <th class="l" data-ord="rota">Rota</th>
+                <th data-ord="itens">Itens</th>
+                <th data-ord="pct">% volume</th>
+                <th data-ord="cu">R$/item</th>
+                <th data-ord="real">Frete real</th>
+                <th data-ord="ct">Custo total</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3. MAPA ------------------------------------------------------------- -->
+  <section class="painel" id="painel-mapa">
+    <div class="grid mapa">
+      <div class="card mapa-bg">
+        <button class="acao" data-export="ch-mapa">PNG</button>
+        <h2>Mapa de calor do Brasil</h2>
+        <div class="desc">Cada ponto é uma célula de 0,25° montada a partir dos CEPs dos pedidos; clique num estado para filtrar</div>
+        <div class="metricas" id="metricas-mapa"></div>
+        <div class="chart grande" id="ch-mapa"></div>
+      </div>
+      <div style="display:grid; gap:14px; align-content:start">
+        <div class="card">
+          <h2 id="uf-titulo">Estado</h2>
+          <div class="desc" id="uf-desc">Clique num estado do mapa</div>
+          <div class="uf-info" id="uf-info"></div>
+        </div>
+        <div class="card">
+          <h2>Como ler o mapa</h2>
+          <div class="roteiro">
+            <b>Manchas</b> — volume de pedidos por célula de 0,25°, ponderado por itens.<br>
+            <b>Linhas finas</b> — contorno aproximado de cada UF, feito a partir dos próprios CEPs.<br>
+            <b>Arcos</b> — as 18 rotas mais carregadas, espessura proporcional aos itens.<br>
+            <b>Siglas</b> — centróide do estado; a bolha cresce com o volume recebido.
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 4. SENSIBILIDADE ---------------------------------------------------- -->
+  <section class="painel" id="painel-sensibilidade">
+    <div class="grid c3">
+      <div class="card">
+        <button class="acao" data-export="ch-sens">PNG</button>
+        <h2>Sensibilidade ao desconto de consolidação</h2>
+        <div class="desc">Custo do Vogel para cada α testado, contra o frete real pago (linha tracejada)</div>
+        <div class="chart grande" id="ch-sens"></div>
+      </div>
+      <div class="card">
+        <h2>Cenários testados</h2>
+        <div class="desc">α é o desconto no trecho até o centro de distribuição</div>
+        <table id="tabela-sens">
+          <thead>
+            <tr><th class="l">α</th><th>Custo Vogel</th><th>Economia</th><th>%</th></tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+        <div class="roteiro" id="sens-leitura" style="margin-top:16px"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 5. VALIDAÇÃO -------------------------------------------------------- -->
+  <section class="painel" id="painel-validacao">
+    <div class="grid c2">
+      <div class="card">
+        <h2>Restrições do modelo</h2>
+        <div class="desc">Conferidas uma a uma na solução devolvida pelo Vogel</div>
+        <div class="checks" id="lista-checks"></div>
+        <div id="selo"></div>
+      </div>
+      <div class="card">
+        <h2>Diagnóstico do recorte</h2>
+        <div class="desc">O que entrou na matriz de custo</div>
+        <div class="uf-info" id="diagnostico"></div>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <div id="rodape-fonte">—</div>
+    <div id="rodape-gerado">—</div>
+  </footer>
+</div>
+
+<script src="vendor/echarts.min.js"></script>
+<script src="dados.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
