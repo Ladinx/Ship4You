@@ -23,13 +23,21 @@ Exemplos de uso:
 from __future__ import annotations
 
 import argparse
-import json
 import os
 import sys
 import time
 
 import numpy as np
 import pandas as pd
+
+# Cores no terminal: colorama habilita ANSI no console do Windows (cmd/PowerShell).
+# Em Linux/macOS é no-op. Sem a biblioteca, o programa continua funcionando sem cor.
+try:
+    import colorama
+
+    colorama.just_fix_windows_console()
+except ImportError:  # pragma: no cover - depende do ambiente
+    colorama = None
 
 from analise_resultados import (
     PENALIDADE,
@@ -72,17 +80,38 @@ def decimal(valor: float, casas: int = 2) -> str:
     return f"{valor:.{casas}f}".replace(".", ",")
 
 
-def _destacar(texto: str) -> str:
-    """Deixa os títulos das perguntas em negrito/ciano quando o terminal permite."""
-    if not sys.stdout.isatty():
+def _cor_ativa() -> bool:
+    """
+    Cor ligada quando a saída é um terminal de verdade.
+    Convenções respeitadas: NO_COLOR desliga sempre (https://no-color.org).
+    No Windows sem colorama, desliga para não imprimir lixo na tela.
+    """
+    if os.environ.get("NO_COLOR") is not None:
+        return False
+    if colorama is None and os.name == "nt":
+        return False
+    return sys.stdout.isatty()
+
+
+COR_ATIVA = _cor_ativa()
+
+
+def _cor(texto: str, codigo: str) -> str:
+    """Aplica cor quando o terminal suporta (para não sujar log/arquivo)."""
+    if not COR_ATIVA:
         return texto
-    return f"\033[1;36m{texto}\033[0m"
+    return f"\033[{codigo}m{texto}\033[0m"
+
+
+def _destacar(texto: str) -> str:
+    """Títulos das perguntas em negrito/ciano."""
+    return _cor(texto, "1;36")
 
 
 def titulo(texto: str) -> None:
     print()
     print("=" * 72)
-    print(texto)
+    print(_cor(texto, "1;36"))
     print("=" * 72)
 
 # ---------------------------------------------------------------------------
@@ -243,12 +272,14 @@ def validar_solucao(cenario: dict, alocacao: np.ndarray, custo_total: float) -> 
 def imprimir_validacao(checks: list) -> None:
     titulo("VALIDAÇÃO DAS RESTRIÇÕES DO MODELO")
     for c in checks:
-        marca = "OK  " if c["ok"] else "FALHA"
+        marca = _cor("OK  ", "1;32") if c["ok"] else _cor("FALHA", "1;31")
         print(f"[{marca}] {c['restricao']:<52} {c['detalhe']}")
     if all(c["ok"] for c in checks):
-        print("\n-> Solução factível: todas as restrições do modelo foram respeitadas.")
+        print()
+        print(_cor("-> Solução factível: todas as restrições do modelo foram respeitadas.", "32"))
     else:
-        print("\n-> Solução com restrição violada: revise os dados ou os parâmetros.")
+        print()
+        print(_cor("-> Solução com restrição violada: revise os dados ou os parâmetros.", "31"))
 
 
 # ---------------------------------------------------------------------------
@@ -282,25 +313,6 @@ def imprimir_top_rotas(top: pd.DataFrame) -> None:
         print(f"{r['origem']:>7} {r['destino']:>8} {numero(r['itens']):>10} "
               f"{moeda(r['custo_unitario']):>10} {moeda(r['custo_total']):>16} "
               f"{percentual(r['participacao_pct']):>9}")
-
-
-def salvar_json(caminho: str, cenario: dict, resumo: dict, checks: list, tempos: dict) -> None:
-    """Grava os números principais em JSON, para reusar em slides/planilha."""
-    conteudo = {
-        "parametros": {
-            "alpha": cenario["alpha"],
-            "cds": cenario["cds"],
-            "filtros": cenario["info"]["filtros"],
-            "itens": cenario["info"]["itens"],
-            "origens": cenario["origens"],
-            "destinos": cenario["destinos"],
-        },
-        "resultado": {chave: round(float(valor), 2) for chave, valor in resumo.items()},
-        "validacao": checks,
-        "tempos_segundos": {etapa: round(t, 3) for etapa, t in tempos.items()},
-    }
-    with open(caminho, "w", encoding="utf-8") as arquivo:
-        json.dump(conteudo, arquivo, ensure_ascii=False, indent=2)
 
 
 def escrever_relatorio(caminho: str, cenario: dict, resumo: dict, checks: list,
@@ -419,8 +431,9 @@ def executar_sensibilidade(args, alphas=None) -> pd.DataFrame:
             "economia_reais": round(economia, 2),
             "economia_pct": round(economia / cenario["custo_real"] * 100, 2),
         })
+        economia_txt = _cor(f"{percentual(linhas[-1]['economia_pct']):>8}", "1;32")
         print(f"  alpha={decimal(a):<5} custo Vogel = {moeda(custo_total):>18} "
-              f"| economia = {percentual(linhas[-1]['economia_pct']):>8}")
+              f"| economia = {economia_txt}")
 
     tabela = pd.DataFrame(linhas)
     print("\nLeitura: se o resultado quase não muda quando alpha varia, a economia vem da "
@@ -483,8 +496,8 @@ def imprimir_sumario_executivo(resumo: dict, tempos: dict) -> None:
     titulo("SUMÁRIO EXECUTIVO")
     print(f"Frete real pago pela Olist:   {moeda(resumo['custo_real'])}")
     print(f"Custo da alocação do Vogel:   {moeda(resumo['custo_vogel'])}")
-    print(f"Economia:                     {moeda(resumo['economia_reais'])} "
-          f"({percentual(resumo['economia_pct'])})")
+    economia = _cor(f"{moeda(resumo['economia_reais'])} ({percentual(resumo['economia_pct'])})", "1;32")
+    print(f"Economia:                     {economia}")
     print(f"Frete médio por item:         {moeda(resumo['custo_medio_real'])} -> "
           f"{moeda(resumo['custo_medio_vogel'])}")
     print("\nDecisão prática: manter a oferta e a demanda atuais e priorizar as rotas de "
@@ -613,7 +626,7 @@ def menu_inicial() -> str:
 
 def executar_pipeline(args) -> int:
     """Pipeline completo: matriz (Matheus) -> Vogel (Becca) -> análise (Bender)."""
-    print("Ship4You — otimização de frete com o Método de Vogel")
+    print(_cor("Ship4You — otimização de frete com o Método de Vogel", "1"))
     print(f"Python {sys.version.split()[0]} | base: {args.dados} | saída: {args.saida}")
     tempos = {}
 
@@ -673,14 +686,12 @@ def executar_pipeline(args) -> int:
     # Artefatos da entrega
     caminho_alocacao = os.path.join(args.saida, "alocacao.csv")
     tabela.to_csv(caminho_alocacao, index=False)
-    salvar_json(os.path.join(args.saida, "resumo.json"), cenario, resumo, checks, tempos)
     escrever_relatorio(os.path.join(args.saida, "relatorio.md"), cenario, resumo,
                        checks, top, tempos, sensibilidade)
 
     imprimir_sumario_executivo(resumo, tempos)
     titulo("ARQUIVOS GERADOS")
     print(f"Alocação completa:  {caminho_alocacao}")
-    print(f"Resumo numérico:    {os.path.join(args.saida, 'resumo.json')}")
     print(f"Relatório:          {os.path.join(args.saida, 'relatorio.md')}")
     if not args.sem_graficos:
         print(f"Gráficos:           {pasta_graficos}/")

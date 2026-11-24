@@ -152,9 +152,8 @@ Arquivos gerados em `resultados/`:
 | `graficos/mapa_calor_rotas.png` | mapa de calor das rotas mais usadas |
 | `graficos/custo_real_vs_vogel.png` | barras Custo Real x Custo Vogel |
 | `graficos/rotas_sobrecarregadas.png` | rotas mais carregadas |
-| `graficos/sensibilidade_alpha.png` | curva custo x desconto do CD (só se marcar a pergunta 6) |
+| `graficos/sensibilidade_alpha.png` | curva custo x desconto do CD (só se ligar a análise de sensibilidade) |
 | `alocacao.csv` | matriz de alocação completa (`origem`, `destino`, `itens`, `custo`) |
-| `resumo.json` | números principais, validação e tempos de execução |
 | `relatorio.md` | relatório pronto para anexar/apresentar |
 
 ### 3. As perguntas (filtros)
