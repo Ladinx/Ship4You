@@ -17,13 +17,8 @@ Além de chamar as três partes, este arquivo:
   - opcionalmente faz a análise de sensibilidade do desconto de consolidação (alpha).
 
 Exemplos de uso:
-    python3 main.py                                    # base completa, alpha = 0.7
-    python3 main.py --exemplo                          # teste rápido, sem os CSVs
-    python3 main.py --categoria cama_mesa_banho         # recorte por categoria
-    python3 main.py --data-inicio 2018-01-01 --data-fim 2018-06-30
-    python3 main.py --alpha 0.5 --cds SP,MG,PR          # muda CDs e desconto
-    python3 main.py --sensibilidade                     # varre vários alpha
-    python3 main.py --listar-categorias                 # ajuda a escolher o filtro
+    python3 main.py                  # abre o menu e as perguntas (só apertar Enter)
+    python3 main.py --sem-perguntas  # roda o cenário padrão sem perguntar nada
 """
 from __future__ import annotations
 
@@ -77,6 +72,13 @@ def decimal(valor: float, casas: int = 2) -> str:
     return f"{valor:.{casas}f}".replace(".", ",")
 
 
+def _destacar(texto: str) -> str:
+    """Deixa os títulos das perguntas em negrito/ciano quando o terminal permite."""
+    if not sys.stdout.isatty():
+        return texto
+    return f"\033[1;36m{texto}\033[0m"
+
+
 def titulo(texto: str) -> None:
     print()
     print("=" * 72)
@@ -87,40 +89,33 @@ def titulo(texto: str) -> None:
 # Linha de comando
 # ---------------------------------------------------------------------------
 def criar_parser() -> argparse.ArgumentParser:
-    """Define os filtros e parâmetros que podem ser passados antes de rodar."""
+    """
+    O programa é guiado por perguntas: basta rodar `python3 main.py` e apertar Enter.
+    O único argumento existe para rodar sem ninguém na frente do teclado.
+    """
     p = argparse.ArgumentParser(
-        description="Ship4You — Matriz de transporte -> Vogel -> Gráficos",
+        description="Ship4You — Matriz de transporte -> Vogel -> Gráficos (modo interativo)",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog=__doc__,
     )
-    p.add_argument("--alpha", type=float, default=0.7,
-                   help="desconto de consolidação no trecho até o CD, de 0 a 1 (padrão: 0.7)")
-    p.add_argument("--cds", default=",".join(CDS_PADRAO),
-                   help=f"UFs candidatas a centro de distribuição (padrão: {','.join(CDS_PADRAO)})")
-    p.add_argument("--data-inicio", default=None, metavar="AAAA-MM-DD",
-                   help="filtra pedidos comprados a partir desta data")
-    p.add_argument("--data-fim", default=None, metavar="AAAA-MM-DD",
-                   help="filtra pedidos comprados até esta data (inclusive)")
-    p.add_argument("--categoria", default=None,
-                   help="uma ou mais categorias de produto separadas por vírgula "
-                        "(use --listar-categorias para ver os nomes)")
-    p.add_argument("--dados", default="dataset-tratado",
-                   help="pasta com os CSVs tratados (padrão: dataset-tratado)")
-    p.add_argument("--saida", default="resultados",
-                   help="pasta de saída dos gráficos, CSV, JSON e relatório (padrão: resultados)")
-    p.add_argument("--sem-graficos", action="store_true",
-                   help="roda matriz + Vogel sem gerar os gráficos (execução rápida)")
-    p.add_argument("--mostrar", action="store_true",
-                   help="além de salvar, abre as janelas dos gráficos na tela")
-    p.add_argument("--sensibilidade", nargs="*", type=float, default=None, metavar="ALPHA",
-                   help="analisa o custo para vários alpha (padrão: 0.3 0.5 0.7 0.85 1.0)")
-    p.add_argument("--top", type=int, default=10,
-                   help="quantas rotas listar no relatório (padrão: 10)")
-    p.add_argument("--exemplo", action="store_true",
-                   help="roda a matriz pequena de exemplo (não precisa dos CSVs)")
-    p.add_argument("--listar-categorias", action="store_true",
-                   help="lista as categorias disponíveis e o período da base")
+    p.add_argument("--sem-perguntas", action="store_true",
+                   help="roda o cenário padrão direto, sem as perguntas (para gerar o resultado automaticamente)")
     return p
+
+
+def preencher_padroes(args) -> None:
+    """Valores padrão do cenário — os mesmos oferecidos como sugestão nas perguntas."""
+    args.alpha = 0.7
+    args.cds = ",".join(CDS_PADRAO)
+    args.data_inicio = None
+    args.data_fim = None
+    args.categoria = None
+    args.dados = "dataset-tratado"
+    args.saida = "resultados"
+    args.sem_graficos = False
+    args.mostrar = False
+    args.sensibilidade = None
+    args.top = 10
 
 
 # ---------------------------------------------------------------------------
@@ -477,7 +472,8 @@ def listar_categorias(args) -> None:
         print(f"  {str(nome):<32} {numero(qtd):>8}")
     if contagem.size > 25:
         print(f"  ... e mais {contagem.size - 25} categorias")
-    print("\nExemplo: python3 main.py --categoria " + str(contagem.index[0]))
+    print("\nNo modo interativo, escolha a opção 2 e digite o número (ou o nome) da categoria, "
+          "por exemplo: " + str(contagem.index[0]))
 
 
 # ---------------------------------------------------------------------------
@@ -503,23 +499,120 @@ def imprimir_sumario_executivo(resumo: dict, tempos: dict) -> None:
 
 
 # ---------------------------------------------------------------------------
+# Modo interativo: perguntas guiadas para quem só quer rodar e ver o resultado
+# ---------------------------------------------------------------------------
+def _perguntar(texto: str, padrao: str = "") -> str:
+    """Faz a pergunta e devolve a resposta; Enter aceita o padrão."""
+    sufixo = f" [{padrao}]" if padrao else ""
+    try:
+        resposta = input(f"{texto}{sufixo}: ").strip()
+    except (EOFError, KeyboardInterrupt):
+        print("\n  (sem resposta — seguindo com o padrão)")
+        return padrao
+    return resposta or padrao
+
+
+def _confirmar(texto: str, padrao_sim: bool = True) -> bool:
+    """Pergunta sim/não; Enter aceita o padrão."""
+    padrao = "S" if padrao_sim else "N"
+    while True:
+        resposta = _perguntar(texto, padrao).lower()
+        if resposta in ("s", "sim", "y", "yes"):
+            return True
+        if resposta in ("n", "nao", "não", "no"):
+            return False
+        print("  responda com s ou n")
+
+
+def modo_interativo(args) -> argparse.Namespace:
+    """Pergunta passo a passo o que rodar, em vez de exigir argumentos decorados."""
+    titulo("MODO INTERATIVO — aperte Enter para aceitar o padrão")
+    print("Dica: para rodar sem nenhuma pergunta, use: python3 main.py --sem-perguntas\n")
+
+    # 1) Recorte da base (filtros)
+    print(_destacar("1) Recorte da base"))
+    print("   [1] base completa       [2] por categoria de produto")
+    print("   [3] por período         [4] categoria + período")
+    recorte = _perguntar("   opção", "1")
+
+    # 1.1) Categoria
+    if recorte in ("2", "4"):
+        print()
+        contagem = carregar_dados_base(args.dados)["product_category_name"].value_counts()
+        top = contagem.head(10)
+        print("   Categorias mais frequentes:")
+        for i, (nome, qtd) in enumerate(top.items(), 1):
+            print(f"   [{i:>2}] {str(nome):<30} {numero(qtd):>8} itens")
+        resposta = _perguntar("   número(s) ou nome, separados por vírgula", "1")
+        nomes = []
+        for parte in resposta.split(","):
+            parte = parte.strip()
+            if parte.isdigit() and 1 <= int(parte) <= len(top):
+                nomes.append(str(top.index[int(parte) - 1]))
+            elif parte:
+                nomes.append(parte)
+        args.categoria = ",".join(nomes)
+
+    # 1.2) Período
+    if recorte in ("3", "4"):
+        print()
+        print("   Período das compras (a base vai de 2016-09 a 2018-08):")
+        args.data_inicio = _perguntar("   data inicial (AAAA-MM-DD, Enter = sem limite)") or None
+        args.data_fim = _perguntar("   data final (AAAA-MM-DD, Enter = sem limite)") or None
+
+    # 2) alpha
+    print()
+    print(_destacar("2) Desconto de consolidação no trecho até o CD (alpha)"))
+    print("   1,00 = esse trecho custa o frete cheio | 0,70 = padrão do trabalho | menor = mais barato passar pelo CD")
+    alpha = _perguntar("   alpha", decimal(args.alpha))
+    try:
+        args.alpha = float(alpha.replace(",", "."))
+    except ValueError:
+        print(f"   valor inválido — mantendo {decimal(args.alpha)}")
+
+    # 3) CDs
+    print()
+    print(_destacar(f"3) Centros de distribuição candidatos: {args.cds}"))
+    if not _confirmar("   manter esses?", padrao_sim=True):
+        args.cds = _perguntar("   UFs separadas por vírgula", args.cds)
+
+    # 4) Saídas
+    print()
+    print(_destacar("4) Resultados"))
+    args.sem_graficos = not _confirmar("   gerar os gráficos?", padrao_sim=True)
+    args.mostrar = (not args.sem_graficos) and _confirmar("   abrir as janelas na tela?", padrao_sim=False)
+    if _confirmar("   rodar a análise de sensibilidade do alpha?", padrao_sim=False):
+        args.sensibilidade = []  # lista vazia = usa os alphas padrão
+
+    # 5) Confirmação
+    print()
+    print(_destacar("Resumo da execução"))
+    print(f"   recorte:      {args.categoria or 'todas as categorias'} | "
+          f"{args.data_inicio or 'início da base'} até {args.data_fim or 'fim da base'}")
+    print(f"   alpha:        {decimal(args.alpha)} | CDs: {args.cds}")
+    print(f"   resultados:   {'gráficos' if not args.sem_graficos else 'sem gráficos'}"
+          f"{' + sensibilidade' if args.sensibilidade is not None else ''}")
+    if not _confirmar("Rodar agora?", padrao_sim=True):
+        raise SystemExit("Execução cancelada.")
+    print()
+    return args
+
+
+# ---------------------------------------------------------------------------
 # Execução principal
 # ---------------------------------------------------------------------------
-def main(argv=None) -> int:
-    args = criar_parser().parse_args(argv)
+def menu_inicial() -> str:
+    """Primeira pergunta: o que a pessoa quer fazer."""
+    titulo("Ship4You — otimização de frete com o Método de Vogel")
+    print("O que você quer fazer?\n")
+    print("  [1] Rodar a otimização (matriz -> Vogel -> gráficos)   <- padrão")
+    print("  [2] Rodar o exemplo pequeno (teste rápido, sem os dados)")
+    print("  [3] Ver as categorias de produto e o período da base")
+    return _perguntar("opção", "1")
 
-    if args.exemplo:
-        from analise_resultados import executar_exemplo
 
-        titulo("EXEMPLO — matriz pequena (não precisa dos CSVs)")
-        executar_exemplo()
-        print("\n-> Exemplo executado em graficos_exemplo/. Serve para testar a instalação.")
-        return 0
-
-    if args.listar_categorias:
-        listar_categorias(args)
-        return 0
-
+def executar_pipeline(args) -> int:
+    """Pipeline completo: matriz (Matheus) -> Vogel (Becca) -> análise (Bender)."""
     print("Ship4You — otimização de frete com o Método de Vogel")
     print(f"Python {sys.version.split()[0]} | base: {args.dados} | saída: {args.saida}")
     tempos = {}
@@ -593,6 +686,30 @@ def main(argv=None) -> int:
         print(f"Gráficos:           {pasta_graficos}/")
     print("\n-> Pipeline concluído.")
     return 0
+
+
+def main(argv=None) -> int:
+    """Ponto de entrada: menu, perguntas e execução."""
+    args = criar_parser().parse_args(argv)
+    preencher_padroes(args)
+
+    if args.sem_perguntas:
+        return executar_pipeline(args)
+
+    escolha = menu_inicial()
+    if escolha == "2":
+        from analise_resultados import executar_exemplo
+
+        titulo("EXEMPLO — matriz pequena (não precisa dos CSVs)")
+        executar_exemplo()
+        print("\n-> Exemplo executado em graficos_exemplo/. Serve para testar a instalação.")
+        return 0
+    if escolha == "3":
+        listar_categorias(args)
+        return 0
+
+    args = modo_interativo(args)
+    return executar_pipeline(args)
 
 
 if __name__ == "__main__":

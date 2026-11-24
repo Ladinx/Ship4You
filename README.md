@@ -126,7 +126,18 @@ limpeza (`limpeza_olist.py`) de novo.
 python3 main.py
 ```
 
-O `main.py` é o arquivo de integração e executa as três partes na ordem certa:
+O programa é **interativo**: abre um menu e depois faz as perguntas do cenário.
+Basta apertar **Enter** para aceitar o padrão (base completa, `alpha = 0,70`,
+gráficos ligados). Não é preciso decorar argumento nenhum.
+
+```
+O que você quer fazer?
+  [1] Rodar a otimização (matriz -> Vogel -> gráficos)   <- padrão
+  [2] Rodar o exemplo pequeno (teste rápido, sem os dados)
+  [3] Ver as categorias de produto e o período da base
+```
+
+Depois o `main.py` executa as três partes na ordem certa:
 
 | Ordem | Arquivo | Responsável | O que faz |
 |---|---|---|---|
@@ -141,40 +152,35 @@ Arquivos gerados em `resultados/`:
 | `graficos/mapa_calor_rotas.png` | mapa de calor das rotas mais usadas |
 | `graficos/custo_real_vs_vogel.png` | barras Custo Real x Custo Vogel |
 | `graficos/rotas_sobrecarregadas.png` | rotas mais carregadas |
-| `graficos/sensibilidade_alpha.png` | curva custo x desconto do CD (só com `--sensibilidade`) |
+| `graficos/sensibilidade_alpha.png` | curva custo x desconto do CD (só se marcar a pergunta 6) |
 | `alocacao.csv` | matriz de alocação completa (`origem`, `destino`, `itens`, `custo`) |
 | `resumo.json` | números principais, validação e tempos de execução |
 | `relatorio.md` | relatório pronto para anexar/apresentar |
 
-### 3. Filtros e opções
+### 3. As perguntas (filtros)
 
-Antes de rodar a otimização, o `main.py` permite recortar a base:
+Depois do menu, o `main.py` pergunta o cenário antes de rodar a otimização:
 
-| Opção | O que faz | Exemplo |
+| Pergunta | O que faz | Padrão (Enter) |
 |---|---|---|
-| `--data-inicio` / `--data-fim` | filtra pelo período da compra (inclusive) | `--data-inicio 2018-01-01 --data-fim 2018-06-30` |
-| `--categoria` | filtra por uma ou mais categorias de produto | `--categoria cama_mesa_banho` |
-| `--alpha` | desconto de consolidação no trecho até o CD (0 a 1) | `--alpha 0.5` |
-| `--cds` | UFs candidatas a centro de distribuição | `--cds SP,MG,PR` |
-| `--sensibilidade` | roda vários `alpha` e compara a economia | `--sensibilidade 0.3 0.7 1.0` |
-| `--listar-categorias` | lista categorias, volume e período da base | `python3 main.py --listar-categorias` |
-| `--sem-graficos` | roda matriz + Vogel sem gerar figuras (rápido) | `python3 main.py --sem-graficos` |
-| `--mostrar` | abre as janelas dos gráficos além de salvar | `python3 main.py --mostrar` |
-| `--top` | quantas rotas listar no relatório | `--top 15` |
-| `--saida` | pasta de saída | `--saida resultados_teste` |
+| **1) Recorte da base** | `[1]` base completa, `[2]` por categoria, `[3]` por período, `[4]` categoria + período | base completa |
+| **1.1) Categoria** (se escolher 2 ou 4) | mostra as 10 categorias mais frequentes e aceita número ou nome | a primeira da lista |
+| **1.2) Período** (se escolher 3 ou 4) | pede data inicial e final (AAAA-MM-DD) | sem limite |
+| **2) alpha** | desconto de consolidação no trecho até o CD (1,00 = frete cheio) | 0,70 |
+| **3) Centros de distribuição** | mantém SP, MG, PR, PE, GO ou aceita outras UFs | manter |
+| **4) Resultados** | liga/desliga gráficos, janelas na tela e análise de sensibilidade | gráficos sim, resto não |
 
-Exemplos completos:
+No fim ele mostra um resumo do que vai rodar e pergunta "Rodar agora?".
+
+Para gerar o resultado padrão sem ninguém no teclado (ex.: durante o vídeo), use:
 
 ```bash
-python3 main.py                                              # base completa, alpha = 0,7
-python3 main.py --categoria beleza_saude --alpha 0.5          # recorte por categoria
-python3 main.py --data-inicio 2018-01-01 --data-fim 2018-03-31  # recorte por período
-python3 main.py --sensibilidade                               # varre 0,3 a 1,0
-python3 main.py --exemplo                                     # teste rápido, sem os CSVs
+python3 main.py --sem-perguntas
 ```
 
-O `--exemplo` roda uma matriz pequena e conhecida (`graficos_exemplo/`) só para
-confirmar que a instalação está funcionando, sem precisar dos dados tratados.
+Se quiser ver a matriz pequena de exemplo (menu, opção 2), ela usa dados
+conhecidos e salva em `graficos_exemplo/` — serve para confirmar que a instalação
+está funcionando sem precisar dos CSVs tratados.
 
 ### 4. Estratégia dos filtros
 
@@ -235,7 +241,7 @@ restrições do modelo foram respeitadas").
 | PR | PR | 5.649 | 15,76 | 5,13% |
 | RJ | RJ | 4.685 | 12,45 | 4,25% |
 
-**Sensibilidade ao desconto de consolidação (`--sensibilidade`):**
+**Sensibilidade ao desconto de consolidação (pergunta 6 do modo interativo):**
 
 | alpha | Custo Vogel | Economia |
 |---|---|---|
@@ -282,7 +288,7 @@ Ship4You/
 
 | Critério da rubrica (Checkpoint 2) | Onde mostrar |
 |---|---|
-| 2.1 Funcionamento e forma de cálculo | `vogel.py` mostra penalidade → maior penalidade → alocação máxima; `main.py` imprime o passo da regra dos CDs (`alpha·c_ih + c_hj`). Rode `python3 main.py --exemplo` para o cálculo manual pequeno. |
+| 2.1 Funcionamento e forma de cálculo | `vogel.py` mostra penalidade → maior penalidade → alocação máxima; `main.py` explica em palavras a regra dos CDs. Use o menu opção 2 para o cálculo manual pequeno. |
 | 2.2 Implementação em Python | `python3 main.py` carrega a base, roda o pipeline, valida as restrições e imprime o tempo de cada etapa. |
 | 2.3 Exibição visual | `resultados/graficos/`: mapa de calor, barras Custo Real x Vogel e rotas sobrecarregadas. |
 | 2.5 Contexto e análise crítica | `resultados/relatorio.md` (seção 6) e a análise de sensibilidade acima: economia em reais e %, o que fazer e o risco de concentração. |
