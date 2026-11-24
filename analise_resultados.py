@@ -4,6 +4,7 @@ import sys
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.colors import LogNorm
+from matplotlib.ticker import FuncFormatter
 
 # mesmo valor que o matriz_transporte.py usa para rotas sem caminho
 PENALIDADE = 99999.0
@@ -113,6 +114,8 @@ def grafico_barras_custos(resumo, pasta, mostrar=False):
                 ha="center", va="bottom", fontsize=9)
     palavra = "Economia" if resumo["economia_reais"] >= 0 else "Aumento de custo"
     ax.set_ylabel("Custo total de frete (R$)")
+    # eixo em reais (sem notação científica 1e6), mais legível na apresentação
+    ax.yaxis.set_major_formatter(FuncFormatter(lambda v, _: f"R$ {v:,.0f}".replace(",", ".")))
     ax.set_title(f"{palavra} de {abs(resumo['economia_pct']):.2f}% "
                  f"(R$ {abs(resumo['economia_reais']):,.0f})")
     fig.tight_layout()

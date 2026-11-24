@@ -103,3 +103,187 @@ Rotas sem pedidos usam só o caminho via CD.
 ```math
 \Large \sum_{i} o_i = \sum_{j} d_j
 ```
+
+## E) Como instalar e executar
+
+### 1. Instalação
+
+Requisitos: Python 3.10 ou superior.
+
+```bash
+cd Ship4You
+python3 -m venv .venv
+source .venv/bin/activate        # Windows: .venv\Scripts\activate
+pip install -r requirements.txt  # pandas, numpy, matplotlib
+```
+
+Os CSVs tratados já estão em `dataset-tratado/`, então não é preciso rodar a
+limpeza (`limpeza_olist.py`) de novo.
+
+### 2. Rodar o projeto inteiro com um comando
+
+```bash
+python3 main.py
+```
+
+O `main.py` é o arquivo de integração e executa as três partes na ordem certa:
+
+| Ordem | Arquivo | Responsável | O que faz |
+|---|---|---|---|
+| 1 | `matriz_transporte.py` | Matheus | monta `custos`, `oferta` e `demanda` a partir do dataset |
+| 2 | `vogel.py` | Rebecca | resolve o transporte pelo Vogel e devolve `alocacao` e `custo_total` |
+| 3 | `analise_resultados.py` | Bender | compara com o frete real e gera os gráficos |
+
+Arquivos gerados em `resultados/`:
+
+| Arquivo | Conteúdo |
+|---|---|
+| `graficos/mapa_calor_rotas.png` | mapa de calor das rotas mais usadas |
+| `graficos/custo_real_vs_vogel.png` | barras Custo Real x Custo Vogel |
+| `graficos/rotas_sobrecarregadas.png` | rotas mais carregadas |
+| `graficos/sensibilidade_alpha.png` | curva custo x desconto do CD (só com `--sensibilidade`) |
+| `alocacao.csv` | matriz de alocação completa (`origem`, `destino`, `itens`, `custo`) |
+| `resumo.json` | números principais, validação e tempos de execução |
+| `relatorio.md` | relatório pronto para anexar/apresentar |
+
+### 3. Filtros e opções
+
+Antes de rodar a otimização, o `main.py` permite recortar a base:
+
+| Opção | O que faz | Exemplo |
+|---|---|---|
+| `--data-inicio` / `--data-fim` | filtra pelo período da compra (inclusive) | `--data-inicio 2018-01-01 --data-fim 2018-06-30` |
+| `--categoria` | filtra por uma ou mais categorias de produto | `--categoria cama_mesa_banho` |
+| `--alpha` | desconto de consolidação no trecho até o CD (0 a 1) | `--alpha 0.5` |
+| `--cds` | UFs candidatas a centro de distribuição | `--cds SP,MG,PR` |
+| `--sensibilidade` | roda vários `alpha` e compara a economia | `--sensibilidade 0.3 0.7 1.0` |
+| `--listar-categorias` | lista categorias, volume e período da base | `python3 main.py --listar-categorias` |
+| `--sem-graficos` | roda matriz + Vogel sem gerar figuras (rápido) | `python3 main.py --sem-graficos` |
+| `--mostrar` | abre as janelas dos gráficos além de salvar | `python3 main.py --mostrar` |
+| `--top` | quantas rotas listar no relatório | `--top 15` |
+| `--saida` | pasta de saída | `--saida resultados_teste` |
+
+Exemplos completos:
+
+```bash
+python3 main.py                                              # base completa, alpha = 0,7
+python3 main.py --categoria beleza_saude --alpha 0.5          # recorte por categoria
+python3 main.py --data-inicio 2018-01-01 --data-fim 2018-03-31  # recorte por período
+python3 main.py --sensibilidade                               # varre 0,3 a 1,0
+python3 main.py --exemplo                                     # teste rápido, sem os CSVs
+```
+
+O `--exemplo` roda uma matriz pequena e conhecida (`graficos_exemplo/`) só para
+confirmar que a instalação está funcionando, sem precisar dos dados tratados.
+
+### 4. Estratégia dos filtros
+
+Quando um filtro é aplicado, várias rotas deixam de ter pedidos dentro do recorte.
+Para não jogar itens em rotas de penalidade, o recorte mantém o frete médio
+observado **naquele filtro** e usa o frete médio histórico da mesma rota na base
+completa como estimativa quando não há pedido. O `main.py` informa quantas rotas
+foram estimadas em cada execução.
+
+## F) Como o Método de Vogel foi aplicado
+
+1. **Montagem (Matheus):** cada item entregue da Olist vira uma linha com UF de
+   origem, UF de destino e frete. Agrupar por UF gera a oferta `o_i` (itens que
+   saem de cada estado), a demanda `d_j` (itens que chegam) e o custo `c_ij`
+   (frete médio por item de cada rota).
+2. **Centros de distribuição (regra do item D):** o custo de cada rota passa a ser
+   `c'_ij = min(c_ij, min_h [alpha·c_ih + c_hj])`, ou seja, o envio direto só é
+   mantido quando nenhum CD candidato é mais barato.
+3. **Balanceamento:** `Σo_i = Σd_j = 110.197` itens. Se um recorte desbalancear, é
+   criada uma linha ou coluna fictícia (`DUMMY`) de custo zero, como pede o método.
+4. **Vogel (Rebecca):** a cada iteração o algoritmo calcula a **penalidade** de
+   cada linha e de cada coluna (diferença entre o custo mais barato e o segundo
+   mais barato daquela linha/coluna), escolhe a **maior penalidade** — a que mais
+   custa deixar de usar — e aloca o **máximo possível** na célula de menor custo
+   daquela linha/coluna. A origem ou o destino que zera sai do problema e o
+   processo se repete até acabar a oferta e a demanda.
+5. **Custo final:** `custo_total = Σ c'_ij · x_ij`, comparado com o frete
+   efetivamente pago na base (`Σ freight_value`).
+6. **Validação:** o `main.py` recompõe as somas e confere, restrição por restrição,
+   que a solução é factível (oferta escoada, demanda atendida, `x_ij` inteiro e não
+   negativo, custo coerente e nenhum item em rota sem caminho).
+
+## G) Resultados obtidos
+
+Execução padrão (`python3 main.py`, base completa, `alpha = 0,7`,
+CDs: SP, MG, PR, PE, GO):
+
+| Indicador | Valor |
+|---|---|
+| Itens entregues analisados | 110.197 |
+| Matriz de custo | 22 origens x 27 destinos (594 rotas) |
+| Frete real pago na Olist | R$ 2.198.275,64 |
+| Custo da alocação do Vogel | R$ 1.880.223,44 |
+| **Economia** | **R$ 318.052,20 (14,47%)** |
+| Frete médio por item | R$ 19,95 → R$ 17,06 |
+| Tempo de execução | ~1,3 s matriz + 0,03 s Vogel + ~2,7 s gráficos |
+
+Todas as restrições do modelo são validadas na execução (saída "todas as
+restrições do modelo foram respeitadas").
+
+**Rotas mais carregadas pelo Vogel:**
+
+| Origem | Destino | Itens | R$/item | % do volume |
+|---|---|---|---|---|
+| SP | SP | 46.448 | 13,20 | 42,15% |
+| SP | RJ | 9.458 | 20,39 | 8,58% |
+| MG | MG | 8.557 | 17,13 | 7,77% |
+| PR | PR | 5.649 | 15,76 | 5,13% |
+| RJ | RJ | 4.685 | 12,45 | 4,25% |
+
+**Sensibilidade ao desconto de consolidação (`--sensibilidade`):**
+
+| alpha | Custo Vogel | Economia |
+|---|---|---|
+| 0,30 | R$ 1.841.091,50 | 16,25% |
+| 0,50 | R$ 1.868.883,95 | 14,98% |
+| 0,70 | R$ 1.880.223,44 | 14,47% |
+| 0,85 | R$ 1.874.958,79 | 14,71% |
+| 1,00 | R$ 1.875.216,31 | 14,70% |
+
+**Leitura crítica (o que fazer com o número):**
+
+- Mesmo com `alpha = 1,0` (CD sem nenhum desconto, ou seja, só a realocação entre
+  rotas), a economia fica em ~14,7%. Isso mostra que **a maior parte do ganho vem de
+  mandar cada volume pela rota de menor frete médio**, e não do desconto hipotético
+  de consolidação. O desconto do CD é um ganho adicional, não a causa principal.
+- O resultado é sensível a `alpha` de forma fraca e não monótona (0,85 apareceu
+  ligeiramente mais caro que 0,70): o Vogel é heurístico e a ordem gulosa de
+  alocação muda com o custo das rotas. Para o relatório, o número a usar é a faixa
+  de 14,5% a 16,3% de economia, não um valor único.
+- Cerca de 42% do volume fica em SP → SP. Ganho de custo alto, mas concentra risco
+  operacional: exige capacidade e contrato de frete nessa rota para a economia se
+  sustentar. As rotas SP → RJ e MG → MG vêm em seguida (8,6% e 7,8%).
+- O Vogel é uma **heurística**: garante solução factível e muito próxima do ótimo,
+  mas não prova de otimalidade. O número serve como comparação prática com o frete
+  realmente pago.
+
+## H) Estrutura do projeto
+
+```
+Ship4You/
+├── main.py                  # integração, filtros, execução e relatório (Arthur)
+├── matriz_transporte.py     # oferta, demanda, matriz de custo e regra dos CDs (Matheus)
+├── vogel.py                 # Método de Vogel (Rebecca)
+├── analise_resultados.py    # comparação com o frete real e gráficos (Bender)
+├── custo_rotas.py           # primeira versão da matriz de custo (apoio)
+├── limpeza_olist.py         # limpeza dos CSVs originais do Olist
+├── requirements.txt         # dependências do projeto
+├── dataset-tratado/         # CSVs limpos usados na execução
+├── resultados/              # saída do main.py (figuras, CSV, JSON e relatório)
+└── README.md                # este arquivo
+```
+
+## I) Onde cada critério da entrega final aparece
+
+| Critério da rubrica (Checkpoint 2) | Onde mostrar |
+|---|---|
+| 2.1 Funcionamento e forma de cálculo | `vogel.py` mostra penalidade → maior penalidade → alocação máxima; `main.py` imprime o passo da regra dos CDs (`alpha·c_ih + c_hj`). Rode `python3 main.py --exemplo` para o cálculo manual pequeno. |
+| 2.2 Implementação em Python | `python3 main.py` carrega a base, roda o pipeline, valida as restrições e imprime o tempo de cada etapa. |
+| 2.3 Exibição visual | `resultados/graficos/`: mapa de calor, barras Custo Real x Vogel e rotas sobrecarregadas. |
+| 2.5 Contexto e análise crítica | `resultados/relatorio.md` (seção 6) e a análise de sensibilidade acima: economia em reais e %, o que fazer e o risco de concentração. |
+
