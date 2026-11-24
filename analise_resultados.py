@@ -159,7 +159,7 @@ def grafico_rotas_sobrecarregadas(alocacao, origens, destinos, pasta, top_n=10, 
 def analisar_resultados(custos, alocacao, custo_total,
                         origens=None, destinos=None,
                         custo_real=None, pasta_saida="graficos",
-                        mostrar=False):
+                        mostrar=False, imprimir=True):
     """
     Gera os graficos e o resumo dos numeros.
 
@@ -169,6 +169,8 @@ def analisar_resultados(custos, alocacao, custo_total,
     custo_real       : use o 'custo_real_historico' do gerar_matriz_transporte();
                        se None, calcula pelo CSV (somente pedidos entregues)
     mostrar          : True abre as janelas dos graficos (alem de salvar)
+    imprimir         : False nao imprime a caixa de resumo na tela (usado pelo
+                       main.py, que mostra o sumario executivo no final)
 
     Retorna um dict com o resumo.
     """
@@ -191,7 +193,8 @@ def analisar_resultados(custos, alocacao, custo_total,
     os.makedirs(pasta_saida, exist_ok=True)
 
     resumo = montar_resumo(custo_real, custo_total, custos, alocacao)
-    imprimir_resumo(resumo)
+    if imprimir:
+        imprimir_resumo(resumo)
 
     grafico_mapa_calor(alocacao, origens, destinos, pasta_saida, mostrar)
     grafico_barras_custos(resumo, pasta_saida, mostrar)

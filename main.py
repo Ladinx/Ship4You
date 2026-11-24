@@ -42,7 +42,6 @@ except ImportError:  # pragma: no cover - depende do ambiente
 from analise_resultados import (
     PENALIDADE,
     analisar_resultados,
-    imprimir_resumo,
     montar_resumo,
 )
 from matriz_transporte import carregar_dados_base, gerar_matriz_transporte
@@ -659,14 +658,13 @@ def executar_pipeline(args) -> int:
     t = time.perf_counter()
     if args.sem_graficos:
         resumo = montar_resumo(cenario["custo_real"], custo_total, cenario["custos"], alocacao)
-        imprimir_resumo(resumo)
         print("(--sem-graficos: figuras não geradas nesta execução)")
     else:
         resumo = analisar_resultados(
             cenario["custos"], alocacao, custo_total,
             origens=cenario["origens"], destinos=cenario["destinos"],
             custo_real=cenario["custo_real"], pasta_saida=pasta_graficos,
-            mostrar=args.mostrar,
+            mostrar=args.mostrar, imprimir=False,
         )
     tempos["analise"] = time.perf_counter() - t
 
